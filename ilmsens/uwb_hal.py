@@ -22,12 +22,12 @@ class ilmsens_hal_ModInfo(Structure):
                 ("mTB_Fc", c_double),
                 ("mTemp", c_double),
                 ("mLSB_Volt", c_double),
-                ("mFSR", c_double),
+                ("mFSR", (c_double * 2)),
                 ("mHWAvg", c_uint),
                 ("mAvg", c_uint),
-                ("mAvgLim", c_uint),
+                ("mAvgLim", (c_uint * 2)),
                 ("mWait", c_uint),
-                ("mWaitLim", c_uint),
+                ("mWaitLim", (c_uint * 2)),
                 ("mNumSamp", c_uint)]
 
 class ilmsens_hal_DEBLevels:
@@ -92,6 +92,13 @@ class uwb_hal():
     def ilmsens_hal_deinitHAL(self) -> None:
         self.lib.ilmsens_hal_deinitHAL()
 
+    def ilmsens_hal_setupSensors(self, dev_nums: List[int], config: ilmsens_hal_ModConfig) -> int:
+        self.lib.ilmsens_hal_setupSensors(
+            byref(c_uint(dev_nums[0])),
+            c_uint(len(dev_nums)),
+            byref(config)
+        )
+
     def ilmsens_hal_openSensors(self, dev_nums: List[int]) -> int:
         self.lib.ilmsens_hal_openSensors(
             byref(c_uint(dev_nums[0])),
@@ -105,12 +112,12 @@ class uwb_hal():
         )
 
     def ilmsens_hal_getModId(self, dev_num: int) -> str:
-        buffer_size = 100
-        buffer = create_string_buffer(b"", buffer_size*4)
-        rt = self.lib.ilmsens_hal_getModId(
+        buffer_size = 128
+        buffer = create_string_buffer(buffer_size)
+        _ = self.lib.ilmsens_hal_getModId(
             c_uint(dev_num),
             byref(buffer),
-            c_size_t(buffer_size)
+            c_size_t(len(buffer))
         )
         return string_at(buffer)
 
@@ -208,17 +215,22 @@ class uwb_hal():
 
         Note: if pTimeoutMillis is 0, this function will block forever.
         """
-        buffer_size = 1*(54610+1)*2 # 1 * tRxSize * tSenInfo.mConfig.mRx
-        # buffer_size = 200000 # 1 * tRxSize * tSenInfo.mConfig.mRx
-        # buffer = create_string_buffer(b'', buffer_size*4)
-        buffer = create_string_buffer(buffer_size*4)
-        self.lib.ilmsens_hal_measGet(
+        buffer_size = 8192
+        # buffer_size = 1*(2**9)*2 # 1 * tRxSize * tSenInfo.mConfig.mRx
+        # buffer_size = 1*(5461+1)*2 # 1 * tRxSize * tSenInfo.mConfig.mRx
+        # buffer_size = 1 * 2**(9) * 1 * 5461 * 2 # 1 * tRxSize * tSenInfo.mConfig.mRx
+        # buffer_size = 1 * ((2**(9-1) * 1) + 1) * 2 # 1 * tRxSize * tSenInfo.mConfig.mRx
+        # buffer = create_string_buffer(buffer_size*4)
+        buffer = (c_int8 * buffer_size)(*([0x0] * buffer_size))
+        print(buffer)
+        rt = self.lib.ilmsens_hal_measGet(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
-            c_size_t(buffer_size),
+            c_size_t(len(buffer)),
             c_uint(timeout_millis)
         )
+        print("return:", rt)
         return string_at(buffer)
 
     def ilmsens_hal_measRead(self, dev_nums: List[int]) -> int:
@@ -226,13 +238,13 @@ class uwb_hal():
         This functions is not blocking and returns immediately with the next measurement
         data or an error-code if no data are available.
         """
-        buffer_size = 1000
-        buffer = create_string_buffer(0, buffer_size*4)
+        buffer_size = 1*(2**9)*2
+        buffer = create_string_buffer(buffer_size*4)
         self.lib.ilmsens_hal_measRead(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
-            c_size_t(buffer_size)
+            c_size_t(len(buffer))
         )
         return string_at(buffer)
 
@@ -240,6 +252,7 @@ class uwb_hal():
 if __name__ == "__main__":
     import time
     import atexit
+    import threading
 
     c = uwb_hal()
     num_devices = c.ilmsens_hal_initHAL()
@@ -265,15 +278,26 @@ if __name__ == "__main__":
     info = c.ilmsens_hal_getModInfo(1)
     print("\nInfo")
     print(*[(x, getattr(info, x)) for x in dir(info) if x[0] == 'm'], sep='\n')
-
+    print("\nmAvgLim")
+    print(*info.mAvgLim, sep='->')
+    print("\nmWaitLim")
+    print(*info.mWaitLim, sep='->')
+    print("\nmFSR")
+    print(*info.mFSR, sep='->')
     print("\nConfig")
     print(*[(x, getattr(info.mConfig, x)) for x in dir(info.mConfig) if x[0] == 'm'], sep='\n')
+
+    print()
+    # config = ilmsens_hal_ModConfig()
+    d = c.ilmsens_hal_setupSensors([1], info.mConfig)
+    print(d)
 
     print()
     d = c.ilmsens_hal_setMaster([1], ilmsens_hal_Modes.ILMSENS_HAL_MASTER_SENSOR)
     print(d)
 
     print()
+    d = c.ilmsens_hal_synchMS([1], ilmsens_hal_SynchModes.ILMSENS_HAL_SYNCH_OFF)
     d = c.ilmsens_hal_synchMS([1], ilmsens_hal_SynchModes.ILMSENS_HAL_SYNCH_ON)
     print(d)
 
@@ -282,36 +306,42 @@ if __name__ == "__main__":
     print(d)
 
     print()
-    d = c.ilmsens_hal_setPD([1], ilmsens_hal_PowerModes.ILMSENS_HAL_TX_ON)
-    print(d)
-
-    print()
     d = c.ilmsens_hal_setAvg([1], 32, 0)
     print(d)
 
     print()
+    d = c.ilmsens_hal_setPD([1], ilmsens_hal_PowerModes.ILMSENS_HAL_TX_OFF)
+    d = c.ilmsens_hal_setPD([1], ilmsens_hal_PowerModes.ILMSENS_HAL_TX_ON)
+    print(d)
+
+    print()
+    # d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_RAW)
     d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_BUF)
     print(d)
 
-    # time.sleep(0.1)
+    # time.sleep(10)
+
+    print()
+    d = c.ilmsens_hal_measGet([1], 1000)
+    print(d)
+
+    # th = threading.Thread(target=c.ilmsens_hal_measGet, args=([1], 1000))
+    # th.start()
+
+    # time.sleep(3)
 
     # print()
-    # for i in range(1000):
+    # for i in range(100):
     #     d = c.ilmsens_hal_measRdy([1])
-    #     print(d)
+    #     print(i, d)
 
+    # print()
+    # d = c.ilmsens_hal_measRead([1])
+    # print(d)
 
     # print()
     # d = c.ilmsens_hal_measStop([1])
     # print(d)
-
-    # print()
-    # d = c.ilmsens_hal_measRdy([1])
-    # print(d)
-
-    print()
-    d = c.ilmsens_hal_measGet([1], 500)
-    print(d)
 
     # print()
     # d = []
