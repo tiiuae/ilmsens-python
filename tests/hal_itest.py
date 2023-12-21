@@ -45,11 +45,11 @@ def get_inline_arguments():
         type=int,
         default=2,
         help="Set log verbosity of HAL integration test application. Values: (0 .. 4)")
-    # parser.add_argument(
-    #     '--bufferedMode',
-    #     action='store_true',
-    #     help="If this command line flag is specified, the measurement \
-    #         uses buffered (threaded) mode. Otherwise raw mode is used.")
+    parser.add_argument(
+        '--bufferedMode',
+        action='store_true',
+        help="If this command line flag is specified, the measurement \
+            uses buffered (threaded) mode. Otherwise raw mode is used.")
 
     return parser.parse_args()
 

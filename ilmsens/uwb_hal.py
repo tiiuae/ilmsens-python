@@ -1,5 +1,7 @@
 import os
 import time
+import struct
+import numpy as np
 from typing import List
 from ctypes import *
 
@@ -207,7 +209,7 @@ class uwb_hal():
         )
         return rt
 
-    def ilmsens_hal_measGet(self, dev_nums: List[int], timeout_millis: int) -> str:
+    def ilmsens_hal_measGet(self, dev_nums: List[int], timeout_millis: int = 500) -> str:
         """ Blocks and reads the measurement data for all specified devices when it becomes available.
         This functions blocks the caller until at least one complete measurement is available for every device or a specified timeout expired.
         The buffer pBuffer must be large enough to hold one complete dataset for each device,
@@ -215,38 +217,60 @@ class uwb_hal():
 
         Note: if pTimeoutMillis is 0, this function will block forever.
         """
-        buffer_size = 8192
+        buffer_size = 1024*4
         # buffer_size = 1*(2**9)*2 # 1 * tRxSize * tSenInfo.mConfig.mRx
         # buffer_size = 1*(5461+1)*2 # 1 * tRxSize * tSenInfo.mConfig.mRx
         # buffer_size = 1 * 2**(9) * 1 * 5461 * 2 # 1 * tRxSize * tSenInfo.mConfig.mRx
         # buffer_size = 1 * ((2**(9-1) * 1) + 1) * 2 # 1 * tRxSize * tSenInfo.mConfig.mRx
         # buffer = create_string_buffer(buffer_size*4)
-        buffer = (c_int8 * buffer_size)(*([0x0] * buffer_size))
-        print(buffer)
-        rt = self.lib.ilmsens_hal_measGet(
+        buffer = (c_byte * buffer_size)(*([0] * buffer_size))
+        _ = self.lib.ilmsens_hal_measGet(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
             c_size_t(len(buffer)),
             c_uint(timeout_millis)
         )
-        print("return:", rt)
-        return string_at(buffer)
+        return bytes(buffer)
 
     def ilmsens_hal_measRead(self, dev_nums: List[int]) -> int:
         """ Reads the measurement data for all specified devices in non-blocking way.
         This functions is not blocking and returns immediately with the next measurement
         data or an error-code if no data are available.
         """
-        buffer_size = 1*(2**9)*2
-        buffer = create_string_buffer(buffer_size*4)
+        buffer_size = 1024*4
+        buffer = (c_byte * buffer_size)(*([0] * buffer_size))
+        # buffer = create_string_buffer(buffer_size*4)
         self.lib.ilmsens_hal_measRead(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
             c_size_t(len(buffer))
         )
-        return string_at(buffer)
+        return bytes(buffer)
+
+    @staticmethod
+    def parse_data(buffer) -> tuple:
+        # # rx1_samples = struct.unpack('d', ''.join(buffer[:511]))
+        # rx1_samples = buffer[:511]
+        # seq_counter = buffer[511]
+        # rx2_samples = buffer[512:1023]
+        # reserved = buffer[1023]
+        rx1_samples = buffer[:2044]
+        seq_counter = buffer[2044:2048]
+        rx2_samples = buffer[2048:4092]
+        reserved = buffer[4092:]
+
+        rx1_samples = np.frombuffer(rx1_samples, dtype=np.float32)
+        rx2_samples = np.frombuffer(rx2_samples, dtype=np.float32)
+        seq_counter = np.frombuffer(seq_counter, dtype=np.int32).item()
+
+        return {
+            "seq_counter": seq_counter,
+            "rx1_samples": rx1_samples,
+            "rx2_samples": rx2_samples,
+            "reserved": reserved
+        }
 
 
 if __name__ == "__main__":
@@ -306,7 +330,7 @@ if __name__ == "__main__":
     print(d)
 
     print()
-    d = c.ilmsens_hal_setAvg([1], 32, 0)
+    d = c.ilmsens_hal_setAvg([1], 3, 0)
     print(d)
 
     print()
@@ -319,11 +343,38 @@ if __name__ == "__main__":
     d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_BUF)
     print(d)
 
-    # time.sleep(10)
+    times = []
+    counter = 256
+    while True:
+        print()
+        t0 = time.time()
+        d = c.ilmsens_hal_measGet([1], 1000)
+        t1 = time.time()
+        times.append(t1-t0)
+        # c.parse_data(d)
+        counter -= 1
+        if counter <= 0:
+            break
 
-    print()
-    d = c.ilmsens_hal_measGet([1], 1000)
-    print(d)
+    # times = []
+    # for i in range(2):
+    #     print()
+    #     # d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_RAW)
+    #     d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_BUF)
+    #     # print(d)
+    #     t0 = time.time()
+    #     print()
+    #     d = c.ilmsens_hal_measGet([1], 1000)
+    #     # c.parse_data(d)
+    #     print(c.parse_data(d))
+    #     t1 = time.time()
+
+    #     times.append(t1-t0)
+
+    print(sum(times)/len(times), max(times), min(times), sum(times))
+    # print()
+    # d = c.ilmsens_hal_measStop([1])
+    # print(d)
 
     # th = threading.Thread(target=c.ilmsens_hal_measGet, args=([1], 1000))
     # th.start()
@@ -334,14 +385,11 @@ if __name__ == "__main__":
     # for i in range(100):
     #     d = c.ilmsens_hal_measRdy([1])
     #     print(i, d)
+    #     time.sleep(1)
 
     # print()
     # d = c.ilmsens_hal_measRead([1])
-    # print(d)
-
-    # print()
-    # d = c.ilmsens_hal_measStop([1])
-    # print(d)
+    # print(len(d))
 
     # print()
     # d = []
