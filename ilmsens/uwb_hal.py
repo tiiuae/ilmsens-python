@@ -1,73 +1,14 @@
 import os
 import numpy as np
+from ilmsens_hal_types import *
+from ilmsens_hal_defn import *
 from typing import List
 from ctypes import *
 
 
-class ilmsens_hal_Version(Structure):
-    _fields_ = [("mMajor", c_uint),
-                ("mMinor", c_uint),
-                ("mBuild", c_uint)]
-
-class ilmsens_hal_ModConfig(Structure):
-    _fields_ = [("mOrder", c_uint),
-                ("mSub", c_uint),
-                ("mClk", c_double),
-                ("mOV", c_uint),
-                ("mTx", c_uint),
-                ("mRx", c_uint)]
-
-class ilmsens_hal_ModInfo(Structure):
-    _fields_ = [("mConfig", ilmsens_hal_ModConfig),
-                ("mTB_Fc", c_double),
-                ("mTemp", c_double),
-                ("mLSB_Volt", c_double),
-                ("mFSR", (c_double * 2)),
-                ("mHWAvg", c_uint),
-                ("mAvg", c_uint),
-                ("mAvgLim", (c_uint * 2)),
-                ("mWait", c_uint),
-                ("mWaitLim", (c_uint * 2)),
-                ("mNumSamp", c_uint)]
-
-class ilmsens_hal_DEBLevels:
-    ILMSENS_DEB_NO = c_uint(0)
-    ILMSENS_DEB_INFO = c_uint(1)
-    ILMSENS_DEB_MORE = c_uint(2)
-    ILMSENS_DEB_MOST = c_uint(3)
-    ILMSENS_DEB_ALL = c_uint(4)
-
-class ilmsens_hal_Modes:
-    ILMSENS_HAL_SLAVE_SENSOR = c_int(0)
-    ILMSENS_HAL_MASTER_SENSOR = c_int(1)
-
-class ilmsens_hal_SynchModes:
-    ILMSENS_HAL_SYNCH_OFF = c_int(0)
-    ILMSENS_HAL_SYNCH_ON = c_int(1)
-
-class ilmsens_hal_PowerModes:
-    ILMSENS_HAL_TX_ON = c_int(0)
-    ILMSENS_HAL_TX_OFF = c_int(1)
-
-class ilmsens_hal_MeasModes:
-    # sensor is currently not measuring
-    ILMSENS_HAL_RUN_OFF = c_int(0)
-    # sensor is measuring and data is not buffered by API
-    ILMSENS_HAL_RUN_RAW = c_int(1)
-    # sensor is measuring and data is buffered by API in separate thread
-    ILMSENS_HAL_RUN_BUF = c_int(2)
-
-
-class uwb_hal():
+class ilmsens_hal():
 
     LIB_PATH = os.path.join("/", "usr", "lib", "libilmsens_hal.so")
-    ILMSENS_HAL_MOD_ID_BUF_SIZE = 1024
-    ILMSENS_HAL_API_VER_MAJOR = 1
-    ILMSENS_HAL_API_VER_MINOR = 1
-    ILMSENS_HAL_API_VER_BUILD = 1
-    ILMSENS_HAL_API_VER = 101001
-
-    ilmsens_hal_SampleType = c_int32
 
     def __init__(self) -> None:
         assert os.path.exists(self.LIB_PATH), f"Can't find {self.LIB_PATH}"
