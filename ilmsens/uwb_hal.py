@@ -1,6 +1,4 @@
 import os
-import time
-import struct
 import numpy as np
 from typing import List
 from ctypes import *
@@ -218,11 +216,6 @@ class uwb_hal():
         Note: if pTimeoutMillis is 0, this function will block forever.
         """
         buffer_size = 1024*4
-        # buffer_size = 1*(2**9)*2 # 1 * tRxSize * tSenInfo.mConfig.mRx
-        # buffer_size = 1*(5461+1)*2 # 1 * tRxSize * tSenInfo.mConfig.mRx
-        # buffer_size = 1 * 2**(9) * 1 * 5461 * 2 # 1 * tRxSize * tSenInfo.mConfig.mRx
-        # buffer_size = 1 * ((2**(9-1) * 1) + 1) * 2 # 1 * tRxSize * tSenInfo.mConfig.mRx
-        # buffer = create_string_buffer(buffer_size*4)
         buffer = (c_byte * buffer_size)(*([0] * buffer_size))
         _ = self.lib.ilmsens_hal_measGet(
             byref(c_uint(dev_nums[0])),
@@ -240,7 +233,6 @@ class uwb_hal():
         """
         buffer_size = 1024*4
         buffer = (c_byte * buffer_size)(*([0] * buffer_size))
-        # buffer = create_string_buffer(buffer_size*4)
         self.lib.ilmsens_hal_measRead(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
@@ -251,11 +243,6 @@ class uwb_hal():
 
     @staticmethod
     def parse_data(buffer) -> tuple:
-        # # rx1_samples = struct.unpack('d', ''.join(buffer[:511]))
-        # rx1_samples = buffer[:511]
-        # seq_counter = buffer[511]
-        # rx2_samples = buffer[512:1023]
-        # reserved = buffer[1023]
         rx1_samples = buffer[:2044]
         seq_counter = buffer[2044:2048]
         rx2_samples = buffer[2048:4092]
@@ -272,127 +259,3 @@ class uwb_hal():
             "reserved": reserved
         }
 
-
-if __name__ == "__main__":
-    import time
-    import atexit
-    import threading
-
-    c = uwb_hal()
-    num_devices = c.ilmsens_hal_initHAL()
-    print(f"Found {num_devices} Ilmsens device{'' if num_devices == 1 else 's'}!")
-
-    atexit.register(c.ilmsens_hal_closeSensors, [1])
-    atexit.register(c.ilmsens_hal_deinitHAL)
-
-    print()
-    c.ilmsens_hal_setDEBLevel(ilmsens_hal_DEBLevels.ILMSENS_DEB_ALL)
-
-    v = c.ilmsens_hal_getVersion()
-    print("\nVersion")
-    print(f"{v.mMajor}.{v.mMinor}.{v.mBuild}")
-
-    print()
-    c.ilmsens_hal_openSensors([1])
-
-    d = c.ilmsens_hal_getModId(1)
-    print("\nID")
-    print(d)
-
-    info = c.ilmsens_hal_getModInfo(1)
-    print("\nInfo")
-    print(*[(x, getattr(info, x)) for x in dir(info) if x[0] == 'm'], sep='\n')
-    print("\nmAvgLim")
-    print(*info.mAvgLim, sep='->')
-    print("\nmWaitLim")
-    print(*info.mWaitLim, sep='->')
-    print("\nmFSR")
-    print(*info.mFSR, sep='->')
-    print("\nConfig")
-    print(*[(x, getattr(info.mConfig, x)) for x in dir(info.mConfig) if x[0] == 'm'], sep='\n')
-
-    print()
-    # config = ilmsens_hal_ModConfig()
-    d = c.ilmsens_hal_setupSensors([1], info.mConfig)
-    print(d)
-
-    print()
-    d = c.ilmsens_hal_setMaster([1], ilmsens_hal_Modes.ILMSENS_HAL_MASTER_SENSOR)
-    print(d)
-
-    print()
-    d = c.ilmsens_hal_synchMS([1], ilmsens_hal_SynchModes.ILMSENS_HAL_SYNCH_OFF)
-    d = c.ilmsens_hal_synchMS([1], ilmsens_hal_SynchModes.ILMSENS_HAL_SYNCH_ON)
-    print(d)
-
-    print()
-    d = c.ilmsens_hal_setMLBS([1])
-    print(d)
-
-    print()
-    d = c.ilmsens_hal_setAvg([1], 3, 0)
-    print(d)
-
-    print()
-    d = c.ilmsens_hal_setPD([1], ilmsens_hal_PowerModes.ILMSENS_HAL_TX_OFF)
-    d = c.ilmsens_hal_setPD([1], ilmsens_hal_PowerModes.ILMSENS_HAL_TX_ON)
-    print(d)
-
-    print()
-    # d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_RAW)
-    d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_BUF)
-    print(d)
-
-    times = []
-    counter = 256
-    while True:
-        print()
-        t0 = time.time()
-        d = c.ilmsens_hal_measGet([1], 1000)
-        t1 = time.time()
-        times.append(t1-t0)
-        # c.parse_data(d)
-        counter -= 1
-        if counter <= 0:
-            break
-
-    # times = []
-    # for i in range(2):
-    #     print()
-    #     # d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_RAW)
-    #     d = c.ilmsens_hal_measRun([1], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_BUF)
-    #     # print(d)
-    #     t0 = time.time()
-    #     print()
-    #     d = c.ilmsens_hal_measGet([1], 1000)
-    #     # c.parse_data(d)
-    #     print(c.parse_data(d))
-    #     t1 = time.time()
-
-    #     times.append(t1-t0)
-
-    print(sum(times)/len(times), max(times), min(times), sum(times))
-    # print()
-    # d = c.ilmsens_hal_measStop([1])
-    # print(d)
-
-    # th = threading.Thread(target=c.ilmsens_hal_measGet, args=([1], 1000))
-    # th.start()
-
-    # time.sleep(3)
-
-    # print()
-    # for i in range(100):
-    #     d = c.ilmsens_hal_measRdy([1])
-    #     print(i, d)
-    #     time.sleep(1)
-
-    # print()
-    # d = c.ilmsens_hal_measRead([1])
-    # print(len(d))
-
-    # print()
-    # d = []
-    # while len(d) == 0:
-    #     d = c.ilmsens_hal_measRead([1])
-    # print(d)
