@@ -200,3 +200,6 @@ class ilmsens_hal():
             "reserved": reserved
         }
 
+
+if __name__ == "__main__":
+    from ..tests import hal_itest

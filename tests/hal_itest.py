@@ -54,7 +54,7 @@ def get_inline_arguments():
     return parser.parse_args()
 
 
-def main(args):
+def hal_itest(args):
     c = uwb_hal()
     atexit.register(c.ilmsens_hal_closeSensors, [1])
     atexit.register(c.ilmsens_hal_deinitHAL)
@@ -107,4 +107,4 @@ def main(args):
 
 if __name__ == "__main__":
     args = get_inline_arguments()
-    main(args)
+    hal_itest(args)
