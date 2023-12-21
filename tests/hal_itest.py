@@ -1,10 +1,10 @@
 import atexit
 import argparse
-from ilmsens import uwb_hal
-from ilmsens import ilmsens_hal_Modes
-from ilmsens import ilmsens_hal_SynchModes
-from ilmsens import ilmsens_hal_PowerModes
-from ilmsens import ilmsens_hal_MeasModes
+from ilmsens_hal import uwb_hal
+from ilmsens_hal import ilmsens_hal_Modes
+from ilmsens_hal import ilmsens_hal_SynchModes
+from ilmsens_hal import ilmsens_hal_PowerModes
+from ilmsens_hal import ilmsens_hal_MeasModes
 
 
 def get_inline_arguments():
