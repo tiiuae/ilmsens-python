@@ -202,4 +202,5 @@ class ilmsens_hal():
 
 
 if __name__ == "__main__":
-    from ..tests import hal_itest
+    from tests import hal_itest
+    hal_itest()
