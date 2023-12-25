@@ -182,8 +182,17 @@ class ilmsens_hal():
         )
         return bytes(buffer)
 
-    def ilmsens_hal_readReg(self, dev_nums: List[int]) -> int:
-        pass
+    def ilmsens_hal_readReg(self, dev_nums: List[int], reg: int) -> int:
+        buffer_size = len(dev_nums)
+        buffer = (c_int16 * buffer_size)(*([0] * buffer_size))
+        _ = self.lib.ilmsens_hal_measGet(
+            byref(c_uint(dev_nums[0])),
+            c_uint(len(dev_nums)),
+            c_uint(reg),
+            byref(buffer),
+            c_size_t(len(bytes(buffer)))
+        )
+        return bytes(buffer)
 
     def ilmsens_hal_writeReg(self, dev_nums: List[int]) -> int:
         pass
