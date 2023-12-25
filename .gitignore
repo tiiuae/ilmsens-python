@@ -157,3 +157,4 @@ ilmsense-testing/
 hal/
 cffi/
 todo
+test.py
