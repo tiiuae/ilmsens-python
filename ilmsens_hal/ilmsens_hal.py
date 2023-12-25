@@ -1,9 +1,9 @@
 import os
-import numpy as np
+import struct
+from ctypes import *
+from typing import List
 from ilmsens_hal_types import *
 from ilmsens_hal_defn import *
-from typing import List
-from ctypes import *
 
 
 class ilmsens_hal():
@@ -156,13 +156,13 @@ class ilmsens_hal():
 
         Note: if pTimeoutMillis is 0, this function will block forever.
         """
-        buffer_size = 1024*4
-        buffer = (c_byte * buffer_size)(*([0] * buffer_size))
+        buffer_size = 1024
+        buffer = (c_int32 * buffer_size)(*([0] * buffer_size))
         _ = self.lib.ilmsens_hal_measGet(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
-            c_size_t(len(buffer)),
+            c_size_t(len(bytes(buffer))),
             c_uint(timeout_millis)
         )
         return bytes(buffer)
@@ -172,15 +172,27 @@ class ilmsens_hal():
         This functions is not blocking and returns immediately with the next measurement
         data or an error-code if no data are available.
         """
-        buffer_size = 1024*4
-        buffer = (c_byte * buffer_size)(*([0] * buffer_size))
+        buffer_size = 1024
+        buffer = (c_int32 * buffer_size)(*([0] * buffer_size))
         self.lib.ilmsens_hal_measRead(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
-            c_size_t(len(buffer))
+            c_size_t(len(bytes(buffer)))
         )
         return bytes(buffer)
+
+    def ilmsens_hal_readReg(self, dev_nums: List[int]) -> int:
+        pass
+
+    def ilmsens_hal_writeReg(self, dev_nums: List[int]) -> int:
+        pass
+
+    def ilmsens_hal_readBlk(self, dev_nums: List[int]) -> int:
+        pass
+
+    def ilmsens_hal_writeBlk(self, dev_nums: List[int]) -> int:
+        pass
 
     @staticmethod
     def parse_data(buffer) -> tuple:
@@ -189,9 +201,9 @@ class ilmsens_hal():
         rx2_samples = buffer[2048:4092]
         reserved = buffer[4092:]
 
-        rx1_samples = np.frombuffer(rx1_samples, dtype=np.float32)
-        rx2_samples = np.frombuffer(rx2_samples, dtype=np.float32)
-        seq_counter = np.frombuffer(seq_counter, dtype=np.int32).item()
+        rx1_samples = struct.unpack(">%df" % (len(rx1_samples)//4), rx1_samples)
+        rx2_samples = struct.unpack(">%df" % (len(rx2_samples)//4), rx2_samples)
+        seq_counter = struct.unpack(">%df" % (len(seq_counter)//4), seq_counter)
 
         return {
             "seq_counter": seq_counter,
@@ -201,6 +213,6 @@ class ilmsens_hal():
         }
 
 
-if __name__ == "__main__":
-    from tests import hal_itest
-    hal_itest()
+# if __name__ == "__main__":
+#     from tests import hal_itest
+#     hal_itest()
