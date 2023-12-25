@@ -1,6 +1,10 @@
 import atexit
 import argparse
 from ilmsens_hal import ilmsens_hal
+from ilmsens_hal import ilmsens_hal_config
+from ilmsens_hal import ilmsens_hal_meas_run
+from ilmsens_hal import ilmsens_hal_meas_config
+from ilmsens_hal import ilmsens_hal_ModConfig
 
 
 def get_inline_arguments():
@@ -51,54 +55,78 @@ def get_inline_arguments():
 
 
 def hal_itest(args=None):
-    print("hal_itest")
-    pass
-    # c = uwb_hal()
-    # atexit.register(c.ilmsens_hal_closeSensors, [1])
-    # atexit.register(c.ilmsens_hal_deinitHAL)
+    c = ilmsens_hal()
+    selected_sensor = 0
+    num_sensors = c.ilmsens_hal_initHAL()
+    sensors_list = [i+1 for i in range(num_sensors)]
 
-    # selected_sensor = 0
+    atexit.register(c.ilmsens_hal_closeSensors, sensors_list)
+    atexit.register(c.ilmsens_hal_deinitHAL)
 
-    # num_sensors = c.ilmsens_hal_initHAL()
-    # c.ilmsens_hal_setDEBLevel(args.logLevel)
-    # ver = c.ilmsens_hal_getVersion()
-    # print(f"HAL library version is V{ver.mMajor}.{ver.mMinor}.{ver.mBuild}")
-    # print(f"HAL library detected {num_sensors} sensors.")
+    c.ilmsens_hal_setDEBLevel(args.logLevel)
+    ver = c.ilmsens_hal_getVersion()
+    print(f"HAL library version is V{ver.mMajor}.{ver.mMinor}.{ver.mBuild}")
+    print(f"HAL library detected {num_sensors} sensors.")
+    c.ilmsens_hal_openSensors(sensors_list)
 
-    # sensors_list = [i+1 for i in range(num_sensors)]
-    # c.ilmsens_hal_openSensors(sensors_list)
+    for i in sensors_list:
+        id = c.ilmsens_hal_getModId(i)
+        print(f"Sensor #1 has ID '{id.decode()}' (result was {len(id)}).")
 
-    # for i in sensors_list:
-    #     id = c.ilmsens_hal_getModId(i)
-    #     print(f"Sensor #1 has ID '{id.decode()}' (result was {len(id)}).")
-
-    # c.ilmsens_hal_setMaster(sensors_list, ilmsens_hal_Modes.ILMSENS_HAL_SLAVE_SENSOR)
-    # c.ilmsens_hal_closeSensors(sensors_list)
+    c.ilmsens_hal_setMaster(sensors_list, ilmsens_hal_config.ILMSENS_HAL_SLAVE_SENSOR)
+    c.ilmsens_hal_closeSensors(sensors_list)
 
 
-    # c.ilmsens_hal_openSensors([sensors_list[selected_sensor]])
-    # c.ilmsens_hal_setMaster([sensors_list[selected_sensor]], ilmsens_hal_Modes.ILMSENS_HAL_MASTER_SENSOR)
+    c.ilmsens_hal_openSensors([sensors_list[selected_sensor]])
 
-    # c.ilmsens_hal_synchMS([sensors_list[selected_sensor]], ilmsens_hal_SynchModes.ILMSENS_HAL_SYNCH_OFF)
-    # c.ilmsens_hal_synchMS([sensors_list[selected_sensor]], ilmsens_hal_SynchModes.ILMSENS_HAL_SYNCH_ON)
+    config = ilmsens_hal_ModConfig()
+    config.mClk = args.rfClock
+    config.mOV = 0 # 0 = use default
+    config.mOrder = args.mlbsOrder
+    config.mRx = 2
+    config.mSub = 0 # 0 = use default
+    config.mTx = 0 # 0 = use default
 
-    # c.ilmsens_hal_setMLBS([sensors_list[selected_sensor]])
-    # c.ilmsens_hal_setAvg([sensors_list[selected_sensor]], args.softwareAvg, 0)
+    c.ilmsens_hal_setupSensors([sensors_list[selected_sensor]], config)
+    c.ilmsens_hal_setMaster([sensors_list[selected_sensor]], ilmsens_hal_config.ILMSENS_HAL_MASTER_SENSOR)
 
-    # info = c.ilmsens_hal_getModInfo(sensors_list[selected_sensor])
-    # print("\nConfig")
-    # print(*[(x, getattr(info.mConfig, x)) for x in dir(info.mConfig) if x[0] == 'm'], sep='\n')
-    # print("\nInfo")
-    # print(*[(x, getattr(info, x)) for x in dir(info) if x[0] == 'm'], sep='\n')
+    c.ilmsens_hal_synchMS([sensors_list[selected_sensor]], ilmsens_hal_meas_config.ILMSENS_HAL_SYNCH_OFF)
+    c.ilmsens_hal_synchMS([sensors_list[selected_sensor]], ilmsens_hal_meas_config.ILMSENS_HAL_SYNCH_ON)
 
-    # c.ilmsens_hal_setPD([sensors_list[selected_sensor]], ilmsens_hal_PowerModes.ILMSENS_HAL_TX_ON)
+    c.ilmsens_hal_setMLBS([sensors_list[selected_sensor]])
+    c.ilmsens_hal_setAvg([sensors_list[selected_sensor]], 1, 0)
 
-    # for _ in range(args.repeatCount):
-    #     c.ilmsens_hal_measRun([sensors_list[selected_sensor]], ilmsens_hal_MeasModes.ILMSENS_HAL_RUN_BUF)
+    tSenInfo = c.ilmsens_hal_getModInfo(sensors_list[selected_sensor])
+    c.ilmsens_hal_setPD([sensors_list[selected_sensor]], ilmsens_hal_meas_config.ILMSENS_HAL_TX_ON)
 
-    #     for i in range(args.responseCount):
-    #         d = c.ilmsens_hal_measGet([sensors_list[selected_sensor]], args.timeoutMillis)
-    #         print(f"Received impulse response #{i+1}")
+    print()
+    print("Configuration of selected sensor is :")
+    print("* RF system clock    [GHz]: {:.6f}".format(tSenInfo.mConfig.mClk))
+    print("* MLBS order              : {}".format(tSenInfo.mConfig.mOrder))
+    print("* Prescaler           1/  : {}".format(tSenInfo.mConfig.mSub))
+    print("* Oversampling        x   : {}".format(tSenInfo.mConfig.mOV))
+    print("* Number of Tx            : {}".format(tSenInfo.mConfig.mTx))
+    print("* Number of Rx            : {}".format(tSenInfo.mConfig.mRx))
+    print("* Number of samples per Rx: {}".format(tSenInfo.mNumSamp))
+    print("* Hardware averages       : {}".format(tSenInfo.mHWAvg))
+    print("* Software avg. limits    : [{} .. {}]".format(tSenInfo.mAvgLim[0], tSenInfo.mAvgLim[1]))
+    print("* Software averages       : {}".format(tSenInfo.mAvg))
+    print("* Wait cycle limits       : [{} .. {}]".format(tSenInfo.mWaitLim[0], tSenInfo.mWaitLim[1]))
+    print("* Wait cycles             : {}".format(tSenInfo.mWait))
+    print("* ADC full scale range [V]: [{:.6f} .. {:.6f}]".format(tSenInfo.mFSR[0], tSenInfo.mFSR[1]))
+    print("* ADC LSB voltage     [mV]: {:.6f}".format(tSenInfo.mLSB_Volt*1000.0))
+    print("* Int. temperature    [\370C]: {:.2f}".format(tSenInfo.mTemp))
+    print()
+
+    tRxSize  = tSenInfo.mNumSamp + tSenInfo.mConfig.mOV
+    tBufSize = 1 * tRxSize * tSenInfo.mConfig.mRx
+
+    for _ in range(args.repeatCount):
+        c.ilmsens_hal_measRun([sensors_list[selected_sensor]], ilmsens_hal_meas_run.ILMSENS_HAL_RUN_BUF)
+
+        for i in range(args.responseCount):
+            d = c.ilmsens_hal_measGet([sensors_list[selected_sensor]], timeout_millis=args.timeoutMillis)
+            print(f"Received impulse response #{i+1}")
 
 
 

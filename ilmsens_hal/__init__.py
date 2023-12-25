@@ -10,3 +10,4 @@ from .ilmsens_hal_defn import ilmsens_hal_config
 from .ilmsens_hal_defn import ilmsens_hal_meas_config
 from .ilmsens_hal_defn import ilmsens_hal_diag
 from .ilmsens_hal_version import ilmsens_hal_version
+from .utils import drPropDependencies

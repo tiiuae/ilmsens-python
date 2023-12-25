@@ -2,8 +2,8 @@ import os
 import struct
 from ctypes import *
 from typing import List
-from ilmsens_hal_types import *
-from ilmsens_hal_defn import *
+from .ilmsens_hal_types import *
+from .ilmsens_hal_defn import *
 
 
 class ilmsens_hal():
@@ -148,7 +148,7 @@ class ilmsens_hal():
         )
         return rt
 
-    def ilmsens_hal_measGet(self, dev_nums: List[int], timeout_millis: int = 500) -> str:
+    def ilmsens_hal_measGet(self, dev_nums: List[int], buf_size_bytes: int = 4096, timeout_millis: int = 500) -> str:
         """ Blocks and reads the measurement data for all specified devices when it becomes available.
         This functions blocks the caller until at least one complete measurement is available for every device or a specified timeout expired.
         The buffer pBuffer must be large enough to hold one complete dataset for each device,
@@ -156,31 +156,29 @@ class ilmsens_hal():
 
         Note: if pTimeoutMillis is 0, this function will block forever.
         """
-        buffer_size = 1024
-        buffer = (c_int32 * buffer_size)(*([0] * buffer_size))
-        _ = self.lib.ilmsens_hal_measGet(
+        buffer = (c_byte * buf_size_bytes)(*([0x0] * buf_size_bytes))
+        num_elements = self.lib.ilmsens_hal_measGet(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
             c_size_t(len(bytes(buffer))),
             c_uint(timeout_millis)
         )
-        return bytes(buffer)
+        return num_elements, bytes(buffer)
 
-    def ilmsens_hal_measRead(self, dev_nums: List[int]) -> int:
+    def ilmsens_hal_measRead(self, dev_nums: List[int], buf_size_bytes: int = 4096) -> int:
         """ Reads the measurement data for all specified devices in non-blocking way.
         This functions is not blocking and returns immediately with the next measurement
         data or an error-code if no data are available.
         """
-        buffer_size = 1024
-        buffer = (c_int32 * buffer_size)(*([0] * buffer_size))
-        self.lib.ilmsens_hal_measRead(
+        buffer = (c_byte * buf_size_bytes)(*([0x0] * buf_size_bytes))
+        num_elements = self.lib.ilmsens_hal_measRead(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             byref(buffer),
             c_size_t(len(bytes(buffer)))
         )
-        return bytes(buffer)
+        return num_elements, bytes(buffer)
 
     def ilmsens_hal_readReg(self, dev_nums: List[int], reg: int) -> int:
         buffer_size = len(dev_nums)
@@ -210,9 +208,9 @@ class ilmsens_hal():
         rx2_samples = buffer[2048:4092]
         reserved = buffer[4092:]
 
-        rx1_samples = struct.unpack(">%df" % (len(rx1_samples)//4), rx1_samples)
-        rx2_samples = struct.unpack(">%df" % (len(rx2_samples)//4), rx2_samples)
-        seq_counter = struct.unpack(">%df" % (len(seq_counter)//4), seq_counter)
+        rx1_samples = struct.unpack("<%di" % (len(rx1_samples)//4), rx1_samples)
+        rx2_samples = struct.unpack("<%di" % (len(rx2_samples)//4), rx2_samples)
+        seq_counter = struct.unpack("<%di" % (len(seq_counter)//4), seq_counter)
 
         return {
             "seq_counter": seq_counter,
