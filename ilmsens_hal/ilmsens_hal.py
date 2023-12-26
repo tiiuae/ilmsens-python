@@ -1,7 +1,7 @@
 import os
 import struct
 from ctypes import *
-from typing import List
+from typing import List, Tuple
 from .ilmsens_hal_types import *
 from .ilmsens_hal_defn import *
 
@@ -180,26 +180,53 @@ class ilmsens_hal():
         )
         return num_elements, bytes(buffer)
 
-    def ilmsens_hal_readReg(self, dev_nums: List[int], reg: int) -> int:
-        buffer_size = len(dev_nums)
-        buffer = (c_int16 * buffer_size)(*([0] * buffer_size))
-        _ = self.lib.ilmsens_hal_measGet(
+    def ilmsens_hal_readReg(self, dev_nums: List[int], reg: int) -> Tuple[int, bytes]:
+        buf_size_bytes = len(dev_nums) * 4
+        s = sizeof(ilmsens_hal_MemoryType)
+        buffer = (ilmsens_hal_MemoryType * (buf_size_bytes//s))(*([0] * (buf_size_bytes//s)))
+        num_elements = self.lib.ilmsens_hal_readReg(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
             c_uint(reg),
             byref(buffer),
             c_size_t(len(bytes(buffer)))
         )
-        return bytes(buffer)
+        return num_elements, bytes(buffer)
 
-    def ilmsens_hal_writeReg(self, dev_nums: List[int]) -> int:
-        pass
+    def ilmsens_hal_writeReg(self, dev_nums: List[int], reg: int, val: int) -> int:
+        res = self.lib.ilmsens_hal_writeReg(
+            byref(c_uint(dev_nums[0])),
+            c_uint(len(dev_nums)),
+            c_uint(reg),
+            ilmsens_hal_MemoryType(val)
+        )
+        return res
 
-    def ilmsens_hal_readBlk(self, dev_nums: List[int]) -> int:
-        pass
+    def ilmsens_hal_readBlk(self, dev_nums: List[int], adr: int, num_el: int) -> Tuple[int, bytes]:
+        buf_size_bytes = len(dev_nums) * num_el * 4
+        s = sizeof(ilmsens_hal_MemoryType)
+        buffer = (ilmsens_hal_MemoryType * (buf_size_bytes//s))(*([0] * (buf_size_bytes//s)))
+        num_elements = self.lib.ilmsens_hal_readBlk(
+            byref(c_uint(dev_nums[0])),
+            c_uint(len(dev_nums)),
+            c_uint(adr),
+            c_uint(num_el),
+            byref(buffer),
+            c_size_t(len(bytes(buffer)))
+        )
+        return num_elements, bytes(buffer)
 
-    def ilmsens_hal_writeBlk(self, dev_nums: List[int]) -> int:
-        pass
+    def ilmsens_hal_writeBlk(self, dev_nums: List[int], adr: int, num_el: int, val: List[int]) -> int:
+        s = sizeof(ilmsens_hal_MemoryType)
+        res = self.lib.ilmsens_hal_writeReg(
+            byref(c_uint(dev_nums[0])),
+            c_uint(len(dev_nums)),
+            c_uint(adr),
+            c_uint(num_el),
+            byref(bytes(val)),
+            c_size_t(len(val * s))
+        )
+        return res
 
     @staticmethod
     def parse_data(buffer) -> tuple:

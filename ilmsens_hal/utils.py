@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 
@@ -21,7 +22,7 @@ def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Ord
 
     tNumSamp = 2**(mDR_MLBS_Order)-1
     tMLBSName = f"mlbs{mDR_MLBS_Order}.txt"
-    tMLBSOrg = np.loadtxt(tMLBSName)
+    tMLBSOrg = np.loadtxt(os.path.join(".", tMLBSName))
     tMLBSOrg = tMLBSOrg.reshape(-1)
     tMLBSOrg = tMLBSOrg[:tNumSamp]
 
