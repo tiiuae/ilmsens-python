@@ -6,8 +6,8 @@ from ctypes import c_byte
 from ctypes import c_size_t
 from ctypes import create_string_buffer, string_at
 from typing import List, Tuple
-from .ilmsens_hal_types import *
-from .ilmsens_hal_defn import *
+from .types import *
+from .defn import *
 
 
 """Load cpp library"""
@@ -53,6 +53,7 @@ def setDEBLevel(level: c_uint) -> int:
     int
         current debug level (on success and error)
     """
+    global c_ilmsens_hal
     return c_ilmsens_hal.ilmsens_hal_setDEBLevel(level)
 
 
@@ -73,6 +74,7 @@ def initHAL() -> int:
         negative error-code
 
     """
+    global c_ilmsens_hal
     num_devices = c_ilmsens_hal.ilmsens_hal_initHAL()
     return num_devices
 
@@ -85,6 +87,7 @@ def deinitHAL() -> None:
     This function always succeeds. Errors that appeared, will only be visible when calling ilmsens_hal_initHAL() again
     (i.e. if the library is not unloaded but a new session is started).
     """
+    global c_ilmsens_hal
     c_ilmsens_hal.ilmsens_hal_deinitHAL()
 
 
@@ -94,6 +97,7 @@ def openSensors(dev_nums: List[int]) -> int:
     Allocates specified devices for a measurement session.
     This function must be called before doing the configuration or starting a measurement session.
     """
+    global c_ilmsens_hal
     c_ilmsens_hal.ilmsens_hal_openSensors(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums))
@@ -106,6 +110,7 @@ def closeSensors(dev_nums: List[int]) -> None:
     Releases specified devices.
     Should be called after the last function call to any of the specified devices.
     """
+    global c_ilmsens_hal
     c_ilmsens_hal.ilmsens_hal_closeSensors(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums))
@@ -117,6 +122,7 @@ def getModId(dev_num: int) -> str:
     """
     Gets unique device-identifier.
     """
+    global c_ilmsens_hal
     buffer_size = 128
     buffer = create_string_buffer(buffer_size)
     _ = c_ilmsens_hal.ilmsens_hal_getModId(
@@ -132,6 +138,7 @@ def getModInfo(dev_num: int) -> int:
     """
     Gets device hardware-configuration.
     """
+    global c_ilmsens_hal
     mod_info = ilmsens_hal_ModInfo()
     c_ilmsens_hal.ilmsens_hal_getModInfo(
         c_uint(dev_num),
@@ -146,6 +153,7 @@ def setupSensors(dev_nums: List[int], config: ilmsens_hal_ModConfig) -> int:
     Performs the initial setup of specified devices.
     This function must be called before starting a measurement session.
     """
+    global c_ilmsens_hal
     c_ilmsens_hal.ilmsens_hal_setupSensors(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
@@ -161,6 +169,7 @@ def setMaster(dev_nums: List[int], mode: c_int) -> int:
     For hardware-synchronized operation of multiple sensors, exactly one sensor of a connected group has
     to be master the others in teh group must be configured as slaves.
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_setMaster(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
@@ -179,6 +188,7 @@ def setAvg(dev_nums: List[int], avg: int, wait_cyc: int) -> int:
 
     Note: May only be called when no measurement is running!
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_setAvg(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
@@ -198,6 +208,7 @@ def setMLBS(dev_nums: List[int]) -> int:
 
     Note: May only be called when no measurement is running!
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_setMLBS(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums))
@@ -212,6 +223,7 @@ def setPD(dev_nums: List[int], mode: c_int) -> int:
 
     Note: May only be called when no measurement is running!
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_setPD(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
@@ -226,6 +238,7 @@ def synchMS(dev_nums: List[int], mode: c_int) -> int:
     Performs digital synchronisation.
     Must be used at least once before a measurement is started.
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_synchMS(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
@@ -240,6 +253,7 @@ def measRun(dev_nums: List[int], mode: c_int) -> int:
     Starts a measurement run with specified devices.
     One measurement run may be pending at a time.
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_measRun(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
@@ -253,6 +267,7 @@ def measStop(dev_nums: List[int]) -> int:
     """
     Stops running measurement.
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_measStop(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums))
@@ -267,6 +282,7 @@ def measRdy(dev_nums: List[int]) -> int:
     This functions is not blocking and returns immediately. However, in raw mode, it will transfer data from a device to
     the libraries' ring-buffer on the host, if it discovers that a complete dataset is available.
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_measRdy(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums))
@@ -281,6 +297,7 @@ def measRead(dev_nums: List[int], buf_size_bytes: int = 4096) -> int:
     This functions is not blocking and returns immediately with the next measurement
     data or an error-code if no data are available.
     """
+    global c_ilmsens_hal
     buffer = (c_byte * buf_size_bytes)(*([0x0] * buf_size_bytes))
     num_elements = c_ilmsens_hal.ilmsens_hal_measRead(
         byref(c_uint(dev_nums[0])),
@@ -301,6 +318,7 @@ def measGet(dev_nums: List[int], buf_size_bytes: int = 4096, timeout_millis: int
 
     Note: if pTimeoutMillis is 0, this function will block forever.
     """
+    global c_ilmsens_hal
     buffer = (c_byte * buf_size_bytes)(*([0x0] * buf_size_bytes))
     num_elements = c_ilmsens_hal.ilmsens_hal_measGet(
         byref(c_uint(dev_nums[0])),
@@ -325,6 +343,7 @@ def readReg(dev_nums: List[int], reg: int) -> Tuple[int, bytes]:
     reg : int
         register address
     """
+    global c_ilmsens_hal
     buf_size_bytes = len(dev_nums) * 4
     s = sizeof(ilmsens_hal_MemoryType)
     buffer = (ilmsens_hal_MemoryType * (buf_size_bytes//s))(*([0] * (buf_size_bytes//s)))
@@ -353,6 +372,7 @@ def writeReg(dev_nums: List[int], reg: int, val: int) -> int:
     val : int
         new register value
     """
+    global c_ilmsens_hal
     res = c_ilmsens_hal.ilmsens_hal_writeReg(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
@@ -377,6 +397,7 @@ def readBlk(dev_nums: List[int], adr: int, num_el: int) -> Tuple[int, bytes]:
     num_el : int
         number of words (elements) to read
     """
+    global c_ilmsens_hal
     buf_size_bytes = len(dev_nums) * num_el * 4
     s = sizeof(ilmsens_hal_MemoryType)
     buffer = (ilmsens_hal_MemoryType * (buf_size_bytes//s))(*([0] * (buf_size_bytes//s)))
@@ -408,6 +429,7 @@ def writeBlk(dev_nums: List[int], adr: int, num_el: int, val: List[int]) -> int:
     val : List[int]
         a list with data to write
     """
+    global c_ilmsens_hal
     s = sizeof(ilmsens_hal_MemoryType)
     buffer = (ilmsens_hal_MemoryType * (len(val)//s))(*(val))
     res = c_ilmsens_hal.ilmsens_hal_writeReg(

@@ -2,7 +2,7 @@ import os
 import struct
 import numpy as np
 from ctypes import sizeof
-from ilmsens_hal.ilmsens_hal_types import ilmsens_hal_MemoryType
+from ilmsens_hal.types import ilmsens_hal_MemoryType
 
 
 
