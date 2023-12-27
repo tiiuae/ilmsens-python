@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ilmsens-python"
+dynamic = ["version"]
+dependencies = []
+requires-python = ">=3.8"
+authors = [{ name = "Sultan Abughazal", email = "sultanmobeen@hotmail.com" }]
+maintainers = []
+description = "A Python wrapper for the Ilmsens UWB hardware abstraction library (HAL)."
+readme = "README.md"
+license = { file = "LICENSE" }
+keywords = ["ilmsens", "hal", "uwb_hal", "uwb", "python", "tii", "derc", "sultan abughazal"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Researchers",
+  "Programming Language :: Python :: 3.6"
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "ilmsens_hal.__version__"}
+
+[project.urls]
+Homepage = "https://tii.ae"
+Documentation = "https://github.com/tiiuae/ilmsens-python.git"
+Repository = "https://github.com/tiiuae/ilmsens-python.git"
+"Bug Tracker" = "https://github.com/tiiuae/ilmsens-python/issues"
+Changelog = "https://github.com/tiiuae/ilmsens-python/master/CHANGELOG.md"

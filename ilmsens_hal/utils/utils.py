@@ -1,5 +1,30 @@
 import os
+import struct
 import numpy as np
+from ctypes import sizeof
+from ilmsens_hal.ilmsens_hal_types import ilmsens_hal_MemoryType
+
+
+
+def parse_data(buffer) -> tuple:
+    num_samples = 511
+    s = sizeof(ilmsens_hal_MemoryType)
+    rx1_samples = buffer[:num_samples*s]
+    seq_counter = buffer[num_samples*s:(num_samples*s)+4]
+    rx2_samples = buffer[(num_samples*s)+4:2*(num_samples*s)+4]
+    reserved = buffer[2*(num_samples*s)+4:]
+
+    rx1_samples = struct.unpack("<%di" % (len(rx1_samples)//4), rx1_samples)
+    rx2_samples = struct.unpack("<%di" % (len(rx2_samples)//4), rx2_samples)
+    seq_counter = struct.unpack("<%di" % (len(seq_counter)//4), seq_counter)
+
+    return {
+        "seq_counter": seq_counter,
+        "rx1_samples": rx1_samples,
+        "rx2_samples": rx2_samples,
+        "reserved": reserved
+    }
+
 
 
 def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Order: int = 9) -> dict:
@@ -22,7 +47,8 @@ def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Ord
 
     tNumSamp = 2**(mDR_MLBS_Order)-1
     tMLBSName = f"mlbs{mDR_MLBS_Order}.txt"
-    tMLBSOrg = np.loadtxt(os.path.join(".", tMLBSName))
+    dirName = os.path.dirname(os.path.abspath(__file__))
+    tMLBSOrg = np.loadtxt(os.path.join(dirName, tMLBSName))
     tMLBSOrg = tMLBSOrg.reshape(-1)
     tMLBSOrg = tMLBSOrg[:tNumSamp]
 

@@ -1,4 +1,6 @@
-from .ilmsens_hal import ilmsens_hal
+__version__ = "0.0.1"
+
+from .ilmsens_hal import *
 from .ilmsens_hal_types import ilmsens_hal_Version
 from .ilmsens_hal_types import ilmsens_hal_ModConfig
 from .ilmsens_hal_types import ilmsens_hal_ModInfo
@@ -10,4 +12,3 @@ from .ilmsens_hal_defn import ilmsens_hal_config
 from .ilmsens_hal_defn import ilmsens_hal_meas_config
 from .ilmsens_hal_defn import ilmsens_hal_diag
 from .ilmsens_hal_version import ilmsens_hal_version
-from .utils import drPropDependencies

@@ -12,6 +12,11 @@
 - - - -
 
 ## Installation Steps
+    $ pip install ilmsens-python
+
+## Usage
+    import ilmsens_hal
+    import ilmsens_hal.utils
 
 
 ## Supported Operating Systems
