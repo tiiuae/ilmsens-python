@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 
-def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Order: int = 9):
+def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Order: int = 9) -> dict:
     mDR_Ref_MLBS = None
     mDR_Ref_Spec = None
     mDR_Ref_Times = None
@@ -40,9 +40,9 @@ def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Ord
     mDR_Ref_Spec = np.conj(np.exp(1j*np.angle(np.fft.fft(mDR_Ref_MLBS, axis=0))))
     mDR_Ref_Spec[0] = 0
 
-    return (
-        mDR_Ref_MLBS,
-        mDR_Ref_Spec,
-        mDR_Ref_Times,
-        mDR_Ref_Frqs,
-    )
+    return {
+        "mDR_Ref_MLBS": mDR_Ref_MLBS,
+        "mDR_Ref_Spec": mDR_Ref_Spec,
+        "mDR_Ref_Times": mDR_Ref_Times,
+        "mDR_Ref_Frqs": mDR_Ref_Frqs,
+    }

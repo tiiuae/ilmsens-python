@@ -2,8 +2,8 @@ import os
 import struct
 from ctypes import *
 from typing import List, Tuple
-from .ilmsens_hal_types import *
-from .ilmsens_hal_defn import *
+from ilmsens_hal_types import *
+from ilmsens_hal_defn import *
 
 
 class ilmsens_hal():
@@ -274,7 +274,7 @@ class ilmsens_hal():
             c_size_t(len(bytes(buffer))),
             c_uint(timeout_millis)
         )
-        return num_elements, bytes(buffer)
+        return bytes(buffer), num_elements
 
     def ilmsens_hal_readReg(self, dev_nums: List[int], reg: int) -> Tuple[int, bytes]:
         """
@@ -298,7 +298,7 @@ class ilmsens_hal():
             byref(buffer),
             c_size_t(len(bytes(buffer)))
         )
-        return num_elements, bytes(buffer)
+        return bytes(buffer), num_elements
 
     def ilmsens_hal_writeReg(self, dev_nums: List[int], reg: int, val: int) -> int:
         """
@@ -366,6 +366,7 @@ class ilmsens_hal():
             a list with data to write
         """
         s = sizeof(ilmsens_hal_MemoryType)
+        buffer = (ilmsens_hal_MemoryType * (len(val)//s))(*(val))
         res = self.lib.ilmsens_hal_writeReg(
             byref(c_uint(dev_nums[0])),
             c_uint(len(dev_nums)),
