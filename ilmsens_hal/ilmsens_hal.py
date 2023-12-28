@@ -123,12 +123,12 @@ def getModId(dev_num: int) -> str:
     Gets unique device-identifier.
     """
     global c_ilmsens_hal
-    buffer_size = 128
+    buffer_size = modinfo.ILMSENS_HAL_MOD_ID_BUF_SIZE.value
     buffer = create_string_buffer(buffer_size)
     _ = c_ilmsens_hal.ilmsens_hal_getModId(
         c_uint(dev_num),
         byref(buffer),
-        c_size_t(len(buffer))
+        c_size_t(buffer_size)
     )
     return string_at(buffer)
 
@@ -291,7 +291,7 @@ def measRdy(dev_nums: List[int]) -> int:
 
 
 
-def measRead(dev_nums: List[int], buf_size_bytes: int = 4096) -> int:
+def measRead(dev_nums: List[int], buf_size_bytes: int = 4096) -> Tuple[bytes, int]:
     """
     Reads the measurement data for all specified devices in non-blocking way.
     This functions is not blocking and returns immediately with the next measurement
@@ -303,13 +303,13 @@ def measRead(dev_nums: List[int], buf_size_bytes: int = 4096) -> int:
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
         byref(buffer),
-        c_size_t(len(bytes(buffer)))
+        c_size_t(buf_size_bytes)
     )
-    return num_elements, bytes(buffer)
+    return bytes(buffer), num_elements
 
 
 
-def measGet(dev_nums: List[int], buf_size_bytes: int = 4096, timeout_millis: int = 500) -> str:
+def measGet(dev_nums: List[int], buf_size_bytes: int = 4096, timeout_millis: int = 500) -> Tuple[bytes, int]:
     """
     Blocks and reads the measurement data for all specified devices when it becomes available.
     This functions blocks the caller until at least one complete measurement is available for every device or a specified timeout expired.
@@ -324,14 +324,14 @@ def measGet(dev_nums: List[int], buf_size_bytes: int = 4096, timeout_millis: int
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
         byref(buffer),
-        c_size_t(len(bytes(buffer))),
+        c_size_t(buf_size_bytes),
         c_uint(timeout_millis)
     )
     return bytes(buffer), num_elements
 
 
 
-def readReg(dev_nums: List[int], reg: int) -> Tuple[int, bytes]:
+def readReg(dev_nums: List[int], reg: int, buf_size_bytes: int = 4) -> Tuple[bytes, int]:
     """
     Reads value from register at pReg address from all specified devices to buffer.
     The buffer pVal must be large enough to hold one word for each device, i.e. it must be at least pNum words in size.
@@ -344,15 +344,13 @@ def readReg(dev_nums: List[int], reg: int) -> Tuple[int, bytes]:
         register address
     """
     global c_ilmsens_hal
-    buf_size_bytes = len(dev_nums) * 4
-    s = sizeof(ilmsens_hal_MemoryType)
-    buffer = (ilmsens_hal_MemoryType * (buf_size_bytes//s))(*([0] * (buf_size_bytes//s)))
+    buffer = (c_byte * buf_size_bytes)(*([0x0] * buf_size_bytes))
     num_elements = c_ilmsens_hal.ilmsens_hal_readReg(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
         c_uint(reg),
         byref(buffer),
-        c_size_t(len(bytes(buffer)))
+        c_size_t(buf_size_bytes)
     )
     return bytes(buffer), num_elements
 
@@ -383,7 +381,7 @@ def writeReg(dev_nums: List[int], reg: int, val: int) -> int:
 
 
 
-def readBlk(dev_nums: List[int], adr: int, num_el: int) -> Tuple[int, bytes]:
+def readBlk(dev_nums: List[int], adr: int, num_el: int, buf_size_bytes: int) -> Tuple[bytes, int]:
     """
     Reads pNumEl elements (32-bit words) starting at address pAdr from the internal memory of specified devices into a buffer pVal.
     The buffer must be large enough to hold pNumEl words for all specified devices, i.e. it provide space for at least pNumEl x pNum words.
@@ -398,18 +396,16 @@ def readBlk(dev_nums: List[int], adr: int, num_el: int) -> Tuple[int, bytes]:
         number of words (elements) to read
     """
     global c_ilmsens_hal
-    buf_size_bytes = len(dev_nums) * num_el * 4
-    s = sizeof(ilmsens_hal_MemoryType)
-    buffer = (ilmsens_hal_MemoryType * (buf_size_bytes//s))(*([0] * (buf_size_bytes//s)))
+    buffer = (c_byte * buf_size_bytes)(*([0x0] * buf_size_bytes))
     num_elements = c_ilmsens_hal.ilmsens_hal_readBlk(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
         c_uint(adr),
         c_uint(num_el),
         byref(buffer),
-        c_size_t(len(bytes(buffer)))
+        c_size_t(buf_size_bytes)
     )
-    return num_elements, bytes(buffer)
+    return bytes(buffer), num_elements
 
 
 
@@ -431,7 +427,6 @@ def writeBlk(dev_nums: List[int], adr: int, num_el: int, val: List[int]) -> int:
     """
     global c_ilmsens_hal
     s = sizeof(ilmsens_hal_MemoryType)
-    buffer = (ilmsens_hal_MemoryType * (len(val)//s))(*(val))
     res = c_ilmsens_hal.ilmsens_hal_writeReg(
         byref(c_uint(dev_nums[0])),
         c_uint(len(dev_nums)),
