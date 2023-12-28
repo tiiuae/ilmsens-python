@@ -27,16 +27,14 @@ def parse_data(buffer) -> tuple:
 
 
 
-def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Order: int = 9) -> dict:
-    mDR_Ref_MLBS = None
+def read_dependencies(mDR_MLBS_Order: int = 9, mDR_F0_Clk: float = 13.312, mDR_OV: int = 1) -> dict:
     mDR_Ref_Spec = None
+    mDR_Ref_MLBS = None
     mDR_Ref_Times = None
     mDR_Ref_Frqs = None
 
-    if mDR_OV > 1:
-        raise NotImplementedError("Not implemented for Oversampling.")
-    if mDR_MLBS_Order not in [9, 12]:
-        raise NotImplementedError("Only implemented for 9-th and 12-th order m-sequence.")
+    if mDR_MLBS_Order not in [9, 12, 15]:
+        raise NotImplementedError("Only implemented for 9-th, 12-th and 15-th order m-sequence.")
 
     # prepare delay time and frequency axis
     tNumSamp = (2**(mDR_MLBS_Order)-1)*mDR_OV
@@ -50,13 +48,12 @@ def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Ord
     tNumSamp = 2**(mDR_MLBS_Order)-1
     tMLBSName = f"mlbs{mDR_MLBS_Order}.txt"
     dirName = os.path.dirname(os.path.abspath(__file__))
-    tMLBSOrg = np.loadtxt(os.path.join(dirName, tMLBSName), delimiter=',')
+    tMLBSOrg = np.loadtxt(os.path.join(dirName, tMLBSName), delimiter=',').astype(np.double)
     tMLBSOrg = tMLBSOrg.reshape(-1, order='F')
     tMLBSOrg = tMLBSOrg[:tNumSamp]
 
     # construct reference MLBS
-    tMLBSOrg = np.expand_dims(tMLBSOrg, axis=1)
-    tBB_MLBS = np.repeat(tMLBSOrg, mDR_OV, axis=1)[:, 0]
+    tBB_MLBS = np.repeat(tMLBSOrg, mDR_OV)
     tF0_MLBS = tBB_MLBS * np.sin(2*np.pi*mDR_F0_Clk * mDR_Ref_Times)
 
     if mDR_OV > 1:
@@ -67,14 +64,14 @@ def drPropDependencies(mDR_F0_Clk: float = 13.312, mDR_OV: int = 1, mDR_MLBS_Ord
     mDR_Ref_Spec = np.conj(np.exp(1j*np.angle(np.fft.fft(mDR_Ref_MLBS)))) # reference spectrum for correlation
     mDR_Ref_Spec[0] = 0 # exclude DC from reference since it cannot be measured reliably
 
-    # if mDR_OV > 1:
-    #     # also suppress clock feed through due to unreliable DC
-    #     mDR_Ref_Spec(tNumSamp+1) = mDR_Ref_Spec(tNumSamp+1) * 0.001
-    #     mDR_Ref_Spec((mDR_OV-1)*tNumSamp+1) = mDR_Ref_Spec((mDR_OV-1)*tNumSamp+1) * 0.001
+    if mDR_OV > 1:
+        # also suppress clock feed through due to unreliable DC
+        mDR_Ref_Spec[tNumSamp+1] = mDR_Ref_Spec[tNumSamp+1] * 0.001
+        mDR_Ref_Spec[(mDR_OV-1)*tNumSamp+1] = mDR_Ref_Spec[(mDR_OV-1)*tNumSamp+1] * 0.001
 
     return {
-        "mDR_Ref_MLBS": mDR_Ref_MLBS,
         "mDR_Ref_Spec": mDR_Ref_Spec,
+        "mDR_Ref_MLBS": mDR_Ref_MLBS,
         "mDR_Ref_Times": mDR_Ref_Times,
         "mDR_Ref_Frqs": mDR_Ref_Frqs,
     }
