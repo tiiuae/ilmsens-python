@@ -7,6 +7,7 @@
 **[Requirements](#requirements)**<br>
 **[Installation Steps](#installation-steps)**<br>
 **[Usage](#usage)**<br>
+**[Documentation](#documentation)**<br>
 
 
 - - - -
@@ -17,7 +18,7 @@ python>=3.6
 numpy>=1.26.2
 ```
 ## Installation Steps
-1. Follow the steps in the manufacturer's setup guide (See [Ilmsens_HAL_API_setup_guide](/manuals/Ilmsens_HAL_API_setup_guide.pdf)).
+1. Follow the steps in the manufacturer's setup guide (See [Setup Guide](/manuals/Ilmsens_HAL_API_setup_guide.pdf)).
 2. Install this package in your Python environment using the below command
 ```
 $ pip install git+https://github.com/tiiuae/ilmsens-python.git
@@ -35,3 +36,6 @@ ver = ilmsens_hal.getVersion()
 print(f"{ver.mMajor}.{ver.mMinor}.{ver.mBuild}")
 ```
 
+## Documentation
+The documentation for the Python module will be completed soon.  
+Meanwhile, the manufacturer's [Function Reference](/manuals/Ilmsens_HAL_API_Function_Reference.pdf) and [Programming Guide](/manuals/Ilmsens_HAL_API_programming_guide.pdf) can be used a the next closest reference.
