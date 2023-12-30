@@ -34,7 +34,12 @@ print(f"Found {num_devices} connected devices")
 
 ver = ilmsens_hal.getVersion()
 print(f"{ver.mMajor}.{ver.mMinor}.{ver.mBuild}")
+
+device_index = 1
+device_id = ilmsens_hal.getModId(device_index)
+print(f"Sensor #{device_index} has ID '{device_id.decode()}' (result was {len(device_id)}).")
 ```
+A complete example can be found in [demo.ipynb](/tests/demo.ipynb).
 
 ## Documentation
 The documentation for the Python module will be completed soon.  
