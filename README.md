@@ -43,4 +43,4 @@ A complete example can be found included in the manuals directory (See [python_e
 
 ## Documentation
 The documentation for the Python module will be completed soon.
-Meanwhile, the manufacturer's [Function Reference](/manuals/Ilmsens_HAL_API_Function_Reference.pdf) and [Programming Guide](/manuals/Ilmsens_HAL_API_programming_guide.pdf) can be used a the next closest reference.
+Meanwhile, the manufacturer's [Function Reference](/manuals/Ilmsens_HAL_API_Function_Reference.pdf) and [Programming Guide](/manuals/Ilmsens_HAL_API_programming_guide.pdf) can be used as the next closest reference.
