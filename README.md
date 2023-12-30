@@ -39,8 +39,8 @@ device_index = 1
 device_id = ilmsens_hal.getModId(device_index)
 print(f"Sensor #{device_index} has ID '{device_id.decode()}' (result was {len(device_id)}).")
 ```
-A complete example can be found in [demo.ipynb](/tests/demo.ipynb).
+A complete example can be found included in the manuals directory (See [python_example.ipynb](/manuals/python_example.ipynb)).
 
 ## Documentation
-The documentation for the Python module will be completed soon.  
+The documentation for the Python module will be completed soon.
 Meanwhile, the manufacturer's [Function Reference](/manuals/Ilmsens_HAL_API_Function_Reference.pdf) and [Programming Guide](/manuals/Ilmsens_HAL_API_programming_guide.pdf) can be used a the next closest reference.
