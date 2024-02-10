@@ -17,12 +17,30 @@
 python>=3.6
 numpy>=1.26.2
 ```
+Tested on Ubuntu 18.04 and 16.04.
+
 ## Installation Steps
-1. Follow the steps in the manufacturer's setup guide (See [Setup Guide](/manuals/Ilmsens_HAL_API_setup_guide.pdf)).
-2. Install this package in your Python environment using the below command
-```
-$ pip install git+https://github.com/tiiuae/ilmsens-python.git
-```
+1. Download the HAL DEB-package to your computer (provided with the ilmsens device). Make sure to get the package matching your Linux distribution and architecture.
+2. In the terminal, update your package index (optional) then install the `libusb-1.0-0-dev` and `libpoco-dev` dependencies.
+   ```
+   $ sudo apt update
+   $ sudo apt install libusb-1.0-0-dev
+   $ sudo apt install libpoco-dev
+   ```
+3. Install the downloaded DEB-package, using `dpkg` and the path to the downloaded DEB file.
+   ```
+   $ sudo dpkg -i ilmsens-hal-X.Y.Z-<dist_name><dist_ver>_<arch>.deb
+   ```
+   To test your HAL installation, go your binaries directory and run the `hal_itest` script.
+   ```
+   $ cd /usr/bin
+   $ hal_itest --timeoutMillis 100 --responseCount 10 --logLevel trace 2> hal_itest.log
+   ```
+5. Install this package in your Python environment using the below command
+   ```
+   $ pip install git+https://github.com/tiiuae/ilmsens-python.git
+   ```
+For more information on steps 1 through 3, refer to the manufacturer's setup guide (See [Setup Guide](/manuals/Ilmsens_HAL_API_setup_guide.pdf)). They are the same steps.
 
 ## Usage
 ```python
