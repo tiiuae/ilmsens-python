@@ -14,7 +14,7 @@
 
 ## Requirements
 ```
-python>=3.6
+python>=3.7
 numpy>=1.26.2
 ```
 Tested on Ubuntu 18.04 and 16.04.
