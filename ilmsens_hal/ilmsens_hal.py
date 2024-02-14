@@ -233,6 +233,20 @@ def setPD(dev_nums: List[int], mode: c_int) -> int:
 
 
 
+def xt_internal_setDel(dev_nums: List[int], delay: c_int) -> int:
+    """
+    Sets ADC clock delay [ns] of the specified sensors.
+    """
+    global c_ilmsens_hal
+    res = c_ilmsens_hal.ilmsens_hal_xt_internal_setDel(
+        byref(c_uint(dev_nums[0])),
+        c_uint(len(dev_nums)),
+        delay
+    )
+    return res
+
+
+
 def synchMS(dev_nums: List[int], mode: c_int) -> int:
     """
     Performs digital synchronisation.
